@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Productcard } from '../Component/Productcard'
 
 // const productdetails=[
@@ -24,9 +24,10 @@ import { Productcard } from '../Component/Productcard'
 //   ]
 export const Home = () => {
 
-  const {products, setProducts} = useState([]);
-  const {Error, setError} = useState(null);
-  const { setLoading } = useState(true);
+  const [products, setProducts] = useState([]);
+  const [Loading, setLoading] = useState(true); 
+  const [Error, setError] = useState(null);
+   
   useEffect(() => {
     fetch("http://localhost:3000/product/get-products")
       .then((res) => {
@@ -44,7 +45,7 @@ export const Home = () => {
         setError(err.message);
         setLoading(false);
       });
-  }, [Error, setError, setLoading, setProducts]);
+  }, []);
 
 
   return (
