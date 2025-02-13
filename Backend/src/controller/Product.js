@@ -1,76 +1,120 @@
-const { Router } = require('express');
-const { productUpload } = require('../../multer');
-const productRouter = Router();
-const productModel = require('../../models/productModel'); // Assuming you have a model file for products
+const {Router} = require('express');
+const { productupload } = require('../../multer');
+const productModel = require('../Model/Productmodel');
+const productrouter = Router();
+const path=require('path')
 
-// Get route
-productRouter.get('/', (req, res) => {
-    res.send('Product Route');
-});
-
-// Create product route
-productRouter.post('/', productUpload.array('files'), async (req, res) => {
-    const { name, description, category, tags, stock, email, price } = req.body;
-    const images = req.files.map(file => file.path);
-    try {
-        const seller = await productModel.findOne({ email: email });
-        if (!seller) {
-            return res.status(400).json({ message: 'Seller not found' });
+productrouter.get("/get-product", async (req, res) => {
+    try{
+       const productfind= await productModel.find();
+         console.log(productfind);
+        if(!productfind){
+            return res.status(400).json({message:"No products found"});
         }
+        const products = productfind.map((product) => {
+            return {
+                id: product._id,
+                name: product.name,
+                description: product.description,
+                category: product.category,
+                tags: product.tags,
+                price: product.price,
+                stock: product.stock,
+                email: product.email,
+                images: product.images,
+                createdAt: product.createdAt,
 
-        if (images.length < 1) {
-            return res.status(400).json({ message: 'Please upload at least one image' });
-        }
-
-        const newProduct = await productModel.create({
-            name: name,
-            description: description,
-            category: category,
-            tags: tags,
-            stocks: stock,
-            email: email,
-            price: price,
-            images: images
+            };
         });
 
-        res.status(201).json({ message: 'Product created successfully', product: newProduct });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error creating product', error: error.message });
+        return  products
+        
+    }
+    catch(err){
+        console.log(err);
     }
 });
 
-// Update product route
-productRouter.put('/:id', productUpload.array('files'), async (req, res) => {
-    const { id } = req.params;
-    const { name, description, category, tags, stock, email, price } = req.body;
-    const images = req.files.map(file => file.path); // Optional for updating images
-
-    try {
-        const product = await productModel.findById(id);
-        if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+productrouter.post("/post-product",productupload.array('files'),async(req, res) => {
+    const {name, description, category, tags, price, stock, email} = req.body;
+    const images = req.files.map((file) => file.path);
+    try{
+        const product = await productModel.findone({email:email});
+        if(!seller){
+            return res.status(400).json({message:"Seller not found"});
         }
-
-        if (email && product.email !== email) {
-            return res.status(403).json({ message: 'Unauthorized to update this product' });
+        if(images.length === 0){
+            return res.status(400).json({message:"Please upload atleast one images"});
         }
-
-        // Update fields
-        if (name) product.name = name;
-        if (description) product.description = description;
-        if (category) product.category = category;
-        if (tags) product.tags = tags;
-        if (stock) product.stocks = stock;
-        if (price) product.price = price;
-        if (images.length > 0) product.images = images; // Only update images if provided
-
-        const updatedProduct = await product.save();
-        res.status(200).json({ message: 'Product updated successfully', product: updatedProduct });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error updating product', error: error.message });
+        await productModel.create({
+            name:name,
+            description:description,
+            category:category,
+            tags:tags,
+            price:price,
+            stock:stock,
+            email:email,
+            images:images
+        });
     }
+    catch(err){
+        console.log(err);
+    }
+    res.status(200).json({message:"Product added successfully"});
+
 });
 
-module.exports = productRouter;
+productrouter.put('/edit-product/:id',productupload.array('files',10),async(req,res)=>{
+
+    try{
+    const {id}=req.params
+    console.log(id)
+    const {name, description, category, tags, price, stock, email} = req.body;
+    const existproduct=await productModel.findById(id)
+
+    if(!existproduct){
+        res.status(400).json({message:"product does not exist"})
+    }
+    const updateimages=existproduct.images
+    if(req.files && req.files.length>0){
+        updateimages=req.files.map((img)=>{
+            return `/product/${path.basename(img.path)}`
+        })
+    }
+    existproduct.name=name
+    existproduct.description=description
+    existproduct.category=category
+    existproduct.tags=tags
+    existproduct.price=price
+    existproduct.stock=stock
+    existproduct.email=email
+    existproduct.images=updateimages
+
+   await existproduct.save()
+
+    res.status(200).json({product:existproduct})
+
+    }
+    catch(err){
+        console.log('error in updating')
+    }
+
+})
+
+productrouter.delete('/delete-product/:id',async(req,res)=>{
+    try{
+        const {id}=req.params
+        const existproduct=await productModel.findById(id)
+
+        if(!existproduct){
+            res.status(400).json({message:"product does not exist"})
+        }
+
+        await existproduct.deleteOne()
+
+    }catch(err){
+        console.log('error in delete')
+    }
+})
+
+module.exports = productrouter;

@@ -38,3 +38,4 @@ export const Productcard = ({ name, image, price, description }) => {
     </div>
   );
 };
+
