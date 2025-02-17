@@ -1,165 +1,206 @@
-import { useState } from 'react'
-import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai'
-import Avatar from 'react-avatar';
-import axios from 'axios'
-import { MdAccountCircle } from "react-icons/md";
-
-export const Signup = () => {
-  const [sign, setSign] = useState({
-    Name: '',
-    Email: '',
-    Password: '',
-    ConfirmPassword: '',
-  });
-
+import { React, useState } from "react";
+import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import { Link } from "react-router-dom";
+import { RxAvatar } from "react-icons/rx";
+import axios from "axios";
+import ValidationFormObject from "../../validation";
+const Signup = () => {
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
-  const [agree,setAgree] = useState(false);
   const [avatar, setAvatar] = useState(null);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setSign(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
-  }
-
-  const handlefilesubmit = (e) => {
+  const [errors, setErrors] = useState({});
+  const handleFileSubmit = (e) => {
     const file = e.target.files[0];
-    console.log("File selected:", file);
-
     if (file) {
-      const filepath = URL.createObjectURL(file);
+      const filePath = URL.createObjectURL(file);
+      console.log("File path:", filePath);
       setAvatar(file);
-      console.log("File path:", filepath);
-    } else {
-      console.error("No file selected");
     }
-  }
-
-  const handlesubmit = async (e) => {
-  
+  };
+  const validateFields = () => {
+    const nameError = ValidationFormObject.validteName(name);
+    const emailError = ValidationFormObject.validteEmail(email);
+    const passwordError = ValidationFormObject.validtePass(password);
+    const newErrors = {};
+    if (nameError !== true) newErrors.name = nameError;
+    if (emailError !== true) newErrors.email = emailError;
+    if (passwordError !== true) newErrors.password = passwordError;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0; // Return true if no errors
+  };
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!avatar) {
-      console.error("No avatar file selected");
-      return;
+    if (!validateFields()) {
+      return; // Stop submission if validation fails
     }
-
-    const formData = new FormData();
-
-    formData.append('Name', sign.Name);
-    formData.append('Email', sign.Email);
-    formData.append('Password', sign.Password);
-    formData.append('avatar', avatar);
-
+    const newForm = new FormData();
+    newForm.append("file", avatar);
+    newForm.append("name", name);
+    newForm.append("email", email);
+    newForm.append("password", password);
     const config = {
       headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    }
-
-    try {
-      const response = await axios.post('http://localhost:3000/create-user', formData, config);
-      console.log('User created:', response.data);
-    } catch (error) {
-      console.error('There was an error!', error);
-    }
-  }
-
-
+        "Content-Type": "multipart/form-data",
+        "Accept": "any",
+      },
+    };
+ // Axios request to backend
+ axios
+ .post("http://localhost:8000/api/v2/user/create-user", newForm, config)
+ .then((res) => {
+  alert(res.data.message); // Success message from server
+   console.log(res.data); // Success response from server
+ })
+ .catch((err) => {
+   alert(err.response ? err.response.data.message : err.message); // Error message from server
+   console.error(err.response ? err.response.data : err.message); // Error handling
+ });
+};
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-      <div className="w-full max-w-md">
-        <h1 className="mb-8 text-center text-3xl font-bold tracking-tight text-gray-900">
-          Sign Up!
-        </h1>
-        <form className="space-y-6 bg-white p-6 rounded-lg shadow-lg" onSubmit={handlesubmit}>
-          <div className="relative">
-            <label htmlFor="Name" className="block text-sm font-medium text-gray-700">Name</label>
-            <input
-              type="text"
-              name="Name"
-              value={sign.Name}
-              onChange={handleChange}
-              required
-              className="bg-gray-200 block w-full rounded-md border-gray-300 px-4 py-2 mt-1 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-300 sm:text-sm"
-            />
-          </div>
-          <div className="relative">
-            <label htmlFor="Email" className="block text-sm font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              name="Email"
-              value={sign.Email}
-              onChange={handleChange}
-              required
-              className="bg-gray-200 block w-full rounded-md border-gray-300 px-4 py-2 mt-1 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-300 sm:text-sm"
-            />
-          </div>
-          <div className="relative">
-            <label htmlFor="Password" className="block text-sm font-medium text-gray-700">Password</label>
-            <input
-              type={visible ? "text" : "password"}
-              name="Password"
-              value={sign.Password}
-              onChange={handleChange}
-              required
-              className=" bg-gray-200 block w-full rounded-md border-gray-300 px-4 py-2 mt-1 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-300 sm:text-sm"
-            />
-            {visible ? (
-              <AiOutlineEyeInvisible
-                className="absolute top-8 right-3 text-gray-500 cursor-pointer"
-                onClick={() => setVisible(false)}
-                size={24}
-              />
-            ) : (
-              <AiOutlineEye
-                className="absolute top-8 right-3 text-gray-500 cursor-pointer"
-                onClick={() => setVisible(true)}
-                size={24}
-              />
-            )}
-          </div>
-          <div className="relative">
-            <label htmlFor="ConfirmPassword" className="block text-sm font-medium text-gray-700">Confirm Password</label>
-            <input
-              type={visible ? "text" : "password"}
-              name="ConfirmPassword"
-              value={sign.ConfirmPassword}
-              onChange={handleChange}
-              required
-              className="bg-gray-200 block w-full rounded-md border-gray-300 px-4 py-2 mt-1 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-300 sm:text-sm"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="avatar" className='block text-sm font-medium text-gray-700'></label>
-            <div className='mt-2 flex items-center'>
-              <span className='inline-block h-8 w-8 rounded-full overflow-hidden'>
-                {avatar?(<img src={URL.createObjectURL(avatar)}/>):(<MdAccountCircle className="h-8 w-8"/>)}
-              </span>
-              <label htmlFor="file-input" className='ml-5 flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50'>
-                <span>Upload your photo</span>
-                <input type="file" name='avatar' id='file-input' accept='.jpg,.png,.jpeg' 
-                onChange={(e)=>handlefilesubmit(e)}
-                className='sr-only' />
+    <div className="min-h-screen bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-50">
+          Register as a new user
+        </h2>
+      </div>
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Full Name
               </label>
+              <div className="mt-1">
+                <input
+                  type="text"
+                  name="name"
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className={`appearance-none block w-full px-3 py-2 border ${
+                    errors.name ? "border-red-500" : "border-gray-300"
+                  } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                />
+                {errors.name && (
+                  <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                )}
+              </div>
             </div>
-          </div>
-
-          <div>
-            <input type="checkbox" value={agree} onChange={()=>setAgree(prev=>!prev)} />
-            <label htmlFor="terms" className="text-sm text-gray-600">I agree to the terms and conditions</label>
-          </div>
-          <button
-            type="submit"
-            className="flex w-full justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2"
-          >
-            Submit
-          </button>
-          <p>already a member? <a href="" style={{color: 'blue'}}>Log in</a></p>
-        </form>
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Email address
+              </label>
+              <div className="mt-1">
+                <input
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={`appearance-none block w-full px-3 py-2 border ${
+                    errors.email ? "border-red-500" : "border-gray-300"
+                  } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                />
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                )}
+              </div>
+            </div>
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Password
+              </label>
+              <div className="mt-1 relative">
+                <input
+                  type={visible ? "text" : "password"}
+                  name="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`appearance-none block w-full px-3 py-2 border ${
+                    errors.password ? "border-red-500" : "border-gray-300"
+                  } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                />
+                {visible ? (
+                  <AiOutlineEye
+                    className="absolute right-2 top-2 cursor-pointer"
+                    size={25}
+                    onClick={() => setVisible(false)}
+                  />
+                ) : (
+                  <AiOutlineEyeInvisible
+                    className="absolute right-2 top-2 cursor-pointer"
+                    size={25}
+                    onClick={() => setVisible(true)}
+                  />
+                )}
+                {errors.password && (
+                  <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                )}
+              </div>
+            </div>
+            <div>
+              <label
+                htmlFor="avatar"
+                className="block text-sm font-medium text-gray-700"
+              ></label>
+              <div className="mt-2 flex items-center">
+                <span className="inline-block h-8 w-8 rounded-full overflow-hidden">
+                  {avatar ? (
+                    <img
+                      src={URL.createObjectURL(avatar)}
+                      alt="avatar"
+                      className="h-full w-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <RxAvatar className="h-8 w-8" />
+                  )}
+                </span>
+                <label
+                  htmlFor="file-input"
+                  className="ml-5 flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  <span>Upload a file</span>
+                  <input
+                    type="file"
+                    name="avatar"
+                    id="file-input"
+                    accept=".jpg,.jpeg,.png"
+                    onChange={handleFileSubmit}
+                    className="sr-only"
+                  />
+                </label>
+              </div>
+            </div>
+            <div>
+              <button
+                type="submit" onClick={handleSubmit}
+                className="group relative w-full h-[40px] flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Submit
+              </button>
+            </div>
+            <div className="flex items-center w-full">
+              <h4>Already have an account?</h4>
+              <Link to="/login" className="text-blue-600 pl-2">
+                Sign In
+              </Link>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
 };
+export default Signup;
