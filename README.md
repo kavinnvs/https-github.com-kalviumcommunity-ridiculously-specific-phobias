@@ -62,3 +62,62 @@ Use bcrypt to hash the entered password. Compare it with the stored hashed passw
 
 **Milstone 8
 In this milestone we created two components called Home.jsx and productcard.jsx. product card.jsx is the template used in home.jsx to map out all the products and display them. We also added routes to the home.jsx to display it when the page loads. Based on the number of products the products are mapped and displayed.
+Milestone 8: Creating a Home Page
+Designed a responsive homepage layout.
+Implemented a grid layout for displaying product cards.
+Ensured responsiveness for different screen sizes.
+Milestone 9: Creating a Product Form
+Created a form to input product details.
+Allowed users to upload multiple product images.
+Saved the entered details in the database.
+Milestone 10: Product Schema & API Endpoint
+Created a Mongoose schema for products.
+Developed a POST endpoint to validate and store product data in MongoDB.
+Milestone 11: Fetch & Display Products
+Created an API endpoint to fetch all products from the database.
+Implemented a frontend function to fetch and display product data dynamically.
+Used useState and useEffect to manage the data lifecycle.
+Milestone 12: Fetch & Display Filtered Products
+Created an API endpoint to fetch products based on the user's email.
+Implemented frontend logic to request and display filtered products.
+Ensured efficient state management using React hooks.
+Milestone 13:- Edit Product Functionality
+Created a PUT API endpoint to update product details in MongoDB.
+Added an Edit button on the product card.
+Implemented auto-filled form for editing existing product details.
+Connected frontend with backend to send PUT requests.
+Handled errors and ensured data validation.
+Milestone 14:- Edit & Delete Product Functionality
+Created a PUT API endpoint to update product details in MongoDB.
+Added an Edit button on the product card.
+Implemented auto-filled form for editing existing product details.
+Connected frontend with backend to send PUT requests.
+Handled errors and ensured data validation.
+Created a DELETE API endpoint to remove products from MongoDB.
+Added a Delete button to the product card.
+Integrated frontend with backend to send DELETE requests.
+Milestone 15 - Creating a Navbar Component 🚀
+Create a New Nav Component
+The Navbar should include links to the following pages:
+Home
+My Products
+Add Product
+Cart
+Navbar is responsive and adapts to different screen sizes.
+Add Navbar to All Pages
+Import and integrate the Nav component into all pages.
+Ensure smooth navigation between different sections of the application.
+Make the Navigation Smooth & User-Friendly
+Use React Router for handling navigation.
+Implement active link highlighting for better UX.
+Optimize the layout to be mobile-friendly.
+Milestone 16 - Creating a Product Info Page 🛒
+Create a New Product Info Page
+The page should display detailed information about a product.
+Include product name, image, price, and description.
+Add a Quantity Selector
+Allow users to select the desired quantity of the product.
+Ensure the quantity selection updates dynamically.
+Implement the Add to Cart Button
+Add a button that allows users to add the selected quantity of the product to their cart.
+Ensure smooth user interaction and feedback after adding to cart.
