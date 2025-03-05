@@ -33,33 +33,33 @@ const userSchema = new Schema({
           }
 
         }
-      ]
+      ],
       
-    //   phoneNumber:{
-    //     type: Number,
-    //   },
-    //   addresses:[
-    //     {
-    //       country: {
-    //         type: String,
-    //       },
-    //       city:{
-    //         type: String,
-    //       },
-    //       address1:{
-    //         type: String,
-    //       },
-    //       address2:{
-    //         type: String,
-    //       },
-    //       zipCode:{
-    //         type: Number,
-    //       },
-    //       addressType:{
-    //         type: String,
-    //       },
-    //     }
-    //   ],
+      phoneNumber:{
+        type: Number,
+      },
+      addresses:[
+        {
+          country: {
+            type: String,
+          },
+          city:{
+            type: String,
+          },
+          address1:{
+            type: String,
+          },
+          address2:{
+            type: String,
+          },
+          zipCode:{
+            type: Number,
+          },
+          addressType:{
+            type: String,
+          },
+        }
+      ],
     //   role:{
     //     type: String,
     //     default: "user",
