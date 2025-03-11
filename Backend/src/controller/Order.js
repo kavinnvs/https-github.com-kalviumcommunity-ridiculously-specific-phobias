@@ -1,18 +1,63 @@
-import Order from "../model/Ordermodel.js";
+const express = require('express');
+const router = express.Router();
+const Order = require('../model/order');
+const User = require('../model/user'); 
 
-export const placeOrder = async (req, res) => {
+router.post('/create-order', async (req, res) => {
     try {
-        const { userId, products, address, totalAmount } = req.body;
+        const { email, products, address } = req.body;
+  
+        if (!email || !products || !address || !Array.isArray(products) || products.length === 0) {
+            return res.status(400).json({ error: 'Invalid input' });
+        }
+  
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+  
+        const userId = user._id;
+  
+        const orders = products.map(product => ({
+            userId,
+            productId: product.productId,
+            quantity: product.quantity,
+            address,
+            status: 'Pending',
+            createdAt: new Date(),
+        }));
+  
+        const createdOrders = await Order.insertMany(orders);
+  
+        res.status(201).json({ message: 'Orders placed successfully', orders: createdOrders });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+  });
 
-        if (!userId || !products || !address || !totalAmount) {
-            return res.status(400).json({ message: "Missing required fields" });
+router.post('/get-orders', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
         }
 
-        const newOrder = new Order({ userId, products, address, totalAmount });
-        await newOrder.save();
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
 
-        res.status(201).json({ message: "Order placed successfully", order: newOrder });
+        const userId = user._id;
+
+        const orders = await Order.find({ userId });
+
+        res.status(200).json({ message: 'Orders retrieved successfully', orders });
     } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
     }
-};
+});
+
+module.exports = router;
