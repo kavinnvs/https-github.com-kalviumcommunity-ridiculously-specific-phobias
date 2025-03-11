@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchUserProfile } from "../services/api";
-import AddressCard from "../components/AddressCard";
+import AddressCard from "../Components/AddressCard";
 
 export default function Profile() {
   const [personalDetails, setPersonalDetails] = useState({});
