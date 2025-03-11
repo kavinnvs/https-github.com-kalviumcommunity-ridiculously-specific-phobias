@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchUserProfile } from "../services/api";
+import AddressCard from "../Components/AddressCard";
 
 export default function Profile() {
   const [personalDetails, setPersonalDetails] = useState({});
@@ -23,8 +24,9 @@ export default function Profile() {
         </div>
         <img
           src={
-            `http:///${personalDetails.avatarUrl}` ||
-            `https://xyz.jpg`
+            personalDetails.avatarUrl
+              ? `http:///${personalDetails.avatarUrl}`
+              : `https://xyz.jpg`
           }
           alt="profile"
           className="w-40 h-40 rounded-full"
@@ -89,4 +91,3 @@ export default function Profile() {
     </div>
   );
 }
-profile.jsx
