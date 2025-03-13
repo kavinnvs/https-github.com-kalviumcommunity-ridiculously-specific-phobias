@@ -1,4 +1,6 @@
 import { NavLink } from "react-router-dom";
+<li><a href="/my-orders">My Orders</a></li>
+
 
 const Navbar = () => {
   return (
