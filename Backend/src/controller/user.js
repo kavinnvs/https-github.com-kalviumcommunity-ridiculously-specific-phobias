@@ -1,17 +1,20 @@
 const { Router } = require("express");
 const userModel = require("../Model/userModel");
 const productModel = require("../Model/productModel");
-const orderModel = require("../Model/orderModel"); // Fixed case sensitivity
+const orderModel = require("../Model/orderModel");
 const bcrypt = require("bcrypt");
 const { upload } = require("../../multer");
 const jwt = require("jsonwebtoken");
-const axios = require("axios"); // For calling PayPal API
+const axios = require("axios");
+const { isAuthenticated } = require("../middleware/auth"); // Import authentication middleware
+const cookieParser = require("cookie-parser"); // Required for cookie handling
 require("dotenv").config({ path: "./src/config/.env" });
 
 const secret = process.env.private_key;
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
 const PAYPAL_SECRET = process.env.PAYPAL_SECRET;
 const userrouter = Router();
+userrouter.use(cookieParser()); // Use cookie parser middleware
 
 // 🟢 Create a new user
 userrouter.post("/create-user", upload.single("file"), async (req, res) => {
@@ -32,7 +35,7 @@ userrouter.post("/create-user", upload.single("file"), async (req, res) => {
   });
 });
 
-// 🟢 Login user
+// 🟢 Login user (with JWT stored in HTTP-only cookie)
 userrouter.post("/login", async (req, res) => {
   const { email, password } = req.body;
   const check = await userModel.findOne({ email });
@@ -46,38 +49,46 @@ userrouter.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Invalid bcrypt compare" });
     }
     if (result) {
-      jwt.sign({ email }, secret, (err, token) => {
-        if (err) {
-          return res.status(400).json({ message: "Invalid jwt" });
-        }
-        res.status(200).json({ token });
+      const token = jwt.sign({ email, id: check._id }, secret, { expiresIn: "7d" });
+
+      // Store token inside an HTTP-only cookie
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days expiry
       });
+
+      res.status(200).json({ message: "Login successful" });
     } else {
       return res.status(400).json({ message: "Invalid password" });
     }
   });
 });
 
-// 🟢 Fetch user profile
-userrouter.get("/profile", async (req, res) => {
-  const { email } = req.query;
-  try {
-    const user = await userModel.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.status(200).json({ user });
-  } catch (error) {
-    res.status(500).json({ message: "Internal Server Error" });
+// 🟢 Protected Route - Fetch user profile (Requires authentication)
+userrouter.get("/profile", isAuthenticated, async (req, res) => {
+  const user = await userModel.findById(req.user.id);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
   }
+  res.status(200).json({ user });
+});
+
+// 🟢 Logout Route - Clears the authentication cookie
+userrouter.get("/logout", (req, res) => {
+  res.cookie("token", "", {
+    httpOnly: true,
+    expires: new Date(0), // Expire immediately
+  });
+  res.status(200).json({ message: "Logged out successfully" });
 });
 
 // 🟢 Update user address
-userrouter.post("/update-address", async (req, res) => {
-  const { email, address } = req.body;
+userrouter.post("/update-address", isAuthenticated, async (req, res) => {
+  const { address } = req.body;
   try {
-    const user = await userModel.findOneAndUpdate(
-      { email },
+    const user = await userModel.findByIdAndUpdate(
+      req.user.id,
       { $push: { addresses: address } },
       { new: true }
     );
@@ -90,11 +101,10 @@ userrouter.post("/update-address", async (req, res) => {
   }
 });
 
-// 🟢 Get user addresses
-userrouter.get("/get-addresses", async (req, res) => {
-  const { email } = req.query;
+// 🟢 Get user addresses (Requires authentication)
+userrouter.get("/get-addresses", isAuthenticated, async (req, res) => {
   try {
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findById(req.user.id);
     if (!user || !user.addresses.length) {
       return res.status(404).json({ message: "No addresses found" });
     }
@@ -104,15 +114,10 @@ userrouter.get("/get-addresses", async (req, res) => {
   }
 });
 
-// 🟢 Place Order
-userrouter.post("/place-order", async (req, res) => {
-  const { email, products, address } = req.body;
+// 🟢 Place Order (Requires authentication)
+userrouter.post("/place-order", isAuthenticated, async (req, res) => {
+  const { products, address } = req.body;
   try {
-    const user = await userModel.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
     const orders = [];
     for (const product of products) {
       const productDetails = await productModel.findById(product.productId);
@@ -121,15 +126,15 @@ userrouter.post("/place-order", async (req, res) => {
       }
 
       const order = new orderModel({
-        userId: user._id,
+        userId: req.user.id,
         productId: product.productId,
         quantity: product.quantity,
         address: address,
         status: "Pending",
-        paypalOrderId: "", // Store PayPal order ID later
+        paypalOrderId: "",
         createdAt: new Date(),
       });
-      
+      orders.push(order);
     }
 
     await orderModel.insertMany(orders);
@@ -140,49 +145,10 @@ userrouter.post("/place-order", async (req, res) => {
   }
 });
 
-// 🟢 PayPal Payment Verification
-userrouter.post("/verify-paypal-payment", async (req, res) => {
-  const { orderId } = req.body;
-
+// 🟢 Get all orders for a user (Requires authentication)
+userrouter.get("/your-orders", isAuthenticated, async (req, res) => {
   try {
-    const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_SECRET}`).toString("base64");
-    const response = await axios.post(
-      `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`,
-      {},
-      {
-        headers: {
-          Authorization: `Basic ${auth}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (response.data.status === "COMPLETED") {
-      const order = await orderModel.findByIdAndUpdate(orderId, { status: "Paid" }, { new: true });
-      if (!order) {
-        return res.status(404).json({ message: "Order not found" });
-      }
-      return res.status(200).json({ message: "Payment successful", order });
-    } else {
-      return res.status(400).json({ message: "Payment not completed" });
-    }
-  } catch (error) {
-    console.error("PayPal Payment Verification Error:", error);
-    return res.status(500).json({ message: "Error verifying payment" });
-  }
-});
-
-// 🟢 Get all orders for a user
-userrouter.get("/your-orders", async (req, res) => {
-  const { email } = req.query;
-
-  try {
-    const user = await userModel.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const orders = await orderModel.find({ userId: user._id }).populate("productId");
+    const orders = await orderModel.find({ userId: req.user.id }).populate("productId");
     const filteredOrders = orders.filter(order => order.productId !== null);
 
     if (!filteredOrders.length) {
@@ -196,8 +162,8 @@ userrouter.get("/your-orders", async (req, res) => {
   }
 });
 
-// 🟢 Cancel Order
-userrouter.post("/cancel-order", async (req, res) => {
+// 🟢 Cancel Order (Requires authentication)
+userrouter.post("/cancel-order", isAuthenticated, async (req, res) => {
   const { orderId } = req.body;
 
   try {
