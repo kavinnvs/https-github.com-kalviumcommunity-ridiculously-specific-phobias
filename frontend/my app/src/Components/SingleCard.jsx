@@ -155,3 +155,6 @@ const SingleCard = () => {
     </div>
     )
 }
+
+
+export default SingleCard

@@ -13,7 +13,7 @@ const AddressForm = () => {
     addressType: "",
   });
 
-  const email = "user@example.com"; // Replace with dynamic email if needed
+  const email = "user@example.com"; 
 
   const handleChange = (e) => {
     setAddressData({ ...addressData, [e.target.name]: e.target.value });
